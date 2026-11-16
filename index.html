@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f6feb">
+  <title>Rota Belirleyici</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-view="addresses">
+  <div class="app">
+    <aside class="panel">
+      <header class="topbar">
+        <div class="brand"><span class="logo">🧭</span> Rota <small>İzmir</small></div>
+        <nav class="tabs" role="tablist">
+          <button id="tabAddr" class="tab" role="tab">1 · Adresler <span id="tabAddrCount" class="pill">0</span></button>
+          <button id="tabRoute" class="tab" role="tab" disabled>2 · Rota</button>
+        </nav>
+      </header>
+
+      <div class="mapwrap">
+        <div id="map"></div>
+        <div id="pickBanner" class="pick-banner" hidden></div>
+      </div>
+
+      <!-- ========== 1. ADRESLER ========== -->
+      <section class="view" data-view="addresses">
+        <div class="card add-card">
+          <div class="add-row">
+            <input id="quickInput" type="text" placeholder="Adres yaz… (örn: kıbrıs şehitleri 12)" enterkeyhint="done">
+            <button id="quickBtn" class="btn primary icon" title="Ekle" aria-label="Ekle">＋</button>
+          </div>
+          <div id="dropZone" class="chips">
+            <input id="fileInput" type="file" accept="image/*" multiple hidden>
+            <button id="pickBtn" class="chip">📷 Ekran görüntüsü</button>
+            <button id="bulkToggle" class="chip">📋 Liste yapıştır</button>
+          </div>
+          <div id="bulkBox" class="bulk" hidden>
+            <textarea id="addrInput" rows="6" placeholder="Her satıra bir adres&#10;Alsancak Mah. Kıbrıs Şehitleri Cad. No:12 Konak&#10;Kazımdirik Mah. 372. Sk. No:5 Bornova"></textarea>
+            <div class="row between">
+              <span id="bulkCount" class="muted"></span>
+              <button id="bulkAdd" class="btn primary">Listeye ekle</button>
+            </div>
+          </div>
+          <div id="ocrStatus" class="note" hidden></div>
+        </div>
+
+        <div class="list-head">
+          <span id="listSummary" class="muted">Henüz adres yok</span>
+          <button id="clearBtn" class="btn link small" hidden>Temizle</button>
+        </div>
+        <div id="emptyState" class="empty">
+          <div class="empty-icon">📦</div>
+          <b>Bugünün adreslerini ekle</b>
+          <ul>
+            <li>Kutuya adres yaz, çıkan öneriden seç</li>
+            <li>Kopyaladığın adres listesini kutuya yapıştır, her satır ayrı eklenir</li>
+            <li><b>📷 Ekran görüntüsü</b> ile galeriden seç, adresler okunur</li>
+          </ul>
+        </div>
+        <ol id="addrList" class="addrs"></ol>
+
+        <details id="settingsCard" class="card settings">
+          <summary>
+            <span class="s-title">⚙️ Rota ayarları</span>
+            <span id="settingsSummary" class="s-sum"></span>
+          </summary>
+          <div class="settings-body">
+            <label class="field">
+              <span>Nereden başlıyorsun?</span>
+              <div class="add-row">
+                <input id="startInput" type="text" placeholder="Boş bırakırsan: bulunduğun yer">
+                <button id="gpsBtn" class="btn ghost icon" title="Şu anki konumum" aria-label="Şu anki konumum">📍</button>
+              </div>
+            </label>
+            <div class="field">
+              <span>Rota nerede bitsin?</span>
+              <div class="seg">
+                <label><input type="radio" name="endMode" value="open" checked><span>Son durakta</span></label>
+                <label><input type="radio" name="endMode" value="return"><span>Başa dön</span></label>
+                <label><input type="radio" name="endMode" value="fixed"><span>Başka yer</span></label>
+              </div>
+              <div><input id="endInput" type="text" placeholder="Bitiş adresi" hidden></div>
+            </div>
+            <div class="field">
+              <span>Öncelik</span>
+              <div class="seg">
+                <label><input type="radio" name="goal" value="km" checked><span>En az km</span></label>
+                <label><input type="radio" name="goal" value="balanced"><span>Dengeli</span></label>
+                <label><input type="radio" name="goal" value="fast"><span>En hızlı</span></label>
+              </div>
+              <small id="goalHint" class="muted"></small>
+            </div>
+            <div class="field">
+              <span>Navigasyon uygulaması</span>
+              <div class="seg">
+                <label><input type="radio" name="navApp" value="google" checked><span>Google Maps</span></label>
+                <label><input type="radio" name="navApp" value="yandex"><span>Yandex</span></label>
+              </div>
+              <small id="navHint" class="muted"></small>
+            </div>
+            <div class="grid3">
+              <label class="field">
+                <span>Çıkış saati</span>
+                <input id="departInput" type="time">
+              </label>
+              <label class="field">
+                <span>Durakta (dk)</span>
+                <input id="serviceInput" type="number" min="0" max="120" value="5" inputmode="numeric">
+              </label>
+              <label class="field">
+                <span>Araç</span>
+                <select id="profileInput">
+                  <option value="driving">Araç</option>
+                  <option value="foot">Yaya</option>
+                </select>
+              </label>
+            </div>
+            <label class="field">
+              <span>İlçe <small>(opsiyonel, arama zaten İzmir içinde)</small></span>
+              <input id="regionInput" type="text" placeholder="Örn: Bornova">
+            </label>
+
+            <details id="gCard" class="advanced">
+              <summary>Gelişmiş: Google trafik verisi <span id="gState" class="badge">Kapalı</span></summary>
+              <p class="muted">İsteğe bağlı. Anahtar girilirse durak sırası da trafikli ve kapı seviyesinde hesaplanır.
+                Anahtar sadece bu cihazda saklanır.</p>
+              <div class="add-row">
+                <input id="gKeyInput" type="password" placeholder="AIza…" autocomplete="off">
+                <button id="gKeySave" class="btn ghost">Kaydet</button>
+              </div>
+              <div id="gUsage" class="muted"></div>
+              <details class="muted">
+                <summary>Anahtar nasıl alınır?</summary>
+                <ol>
+                  <li>console.cloud.google.com → proje oluştur → faturalandırmayı aç.</li>
+                  <li><b>Places API (New)</b> ve <b>Routes API</b>'yi etkinleştir.</li>
+                  <li>API anahtarı oluştur; "Websites" ile bu siteye, API listesiyle bu 2 API'ye kısıtla.</li>
+                  <li>Bütçe uyarısı kur, anahtarı buraya yapıştır.</li>
+                </ol>
+              </details>
+            </details>
+          </div>
+        </details>
+      </section>
+
+      <!-- ========== 2. ROTA ========== -->
+      <section class="view" data-view="route" hidden>
+        <div id="resultCard">
+          <!-- Sıradaki durak: sürüş sırasında tek bakışta yapılacak iş -->
+          <div id="nextCard" class="next card">
+            <div class="next-top">
+              <span id="nextLabel" class="next-label">SIRADAKİ DURAK</span>
+              <button id="undoBtn" class="btn link small" hidden>↶ Geri al</button>
+            </div>
+            <div id="nextAddr" class="next-addr"></div>
+            <div id="nextMeta" class="next-meta"></div>
+            <div id="nextExtra" class="next-extra"></div>
+            <a id="nextGo" class="btn primary big next-go" target="_blank" rel="noopener">▶ Yol tarifi</a>
+            <div class="next-actions">
+              <button id="nextDone" class="btn ok">✓ Teslim edildi</button>
+              <button id="nextFail" class="btn fail">✗ Edilemedi</button>
+            </div>
+            <button id="nextEdit" class="btn link small">📝 Not / tahsilat ekle</button>
+          </div>
+          <div id="finishCard" class="finish card" hidden></div>
+
+          <div id="doneBar" class="donebar"><div class="bar"><i id="doneFill"></i><i id="failFill" class="fail"></i></div><span id="doneText"></span></div>
+          <div id="summary" class="summary"></div>
+          <ol id="stopList" class="stops"></ol>
+
+          <details class="card info">
+            <summary>🗺️ Tüm rotayı tek seferde aç</summary>
+            <div id="navLinks" class="navlinks pad"></div>
+          </details>
+          <details class="card info">
+            <summary>ℹ️ Rota notları <span id="warnCount" class="badge"></span></summary>
+            <div id="warnings"></div>
+          </details>
+          <div class="row between">
+            <button id="recalcBtn" class="btn ghost">↻ Yeniden hesapla</button>
+            <button id="copyBtn" class="btn link">Listeyi kopyala</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="actionbar">
+        <div id="progress" class="status" hidden></div>
+        <button id="routeBtn" class="btn primary big">🚀 Rotayı oluştur</button>
+      </div>
+
+      <footer class="foot">© OpenStreetMap katkıcıları · OSRM · Nominatim/Photon</footer>
+    </aside>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+  <script src="js/parse.js"></script>
+  <script src="js/geocode.js"></script>
+  <script src="js/google.js"></script>
+  <script src="js/solver.js"></script>
+  <script src="js/routing.js"></script>
+  <script src="js/ocr.js"></script>
+  <script src="js/autocomplete.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
