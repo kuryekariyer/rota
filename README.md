@@ -3,13 +3,17 @@
 Günlük teslimat/ziyaret adreslerini alıp **trafiği hesaba katarak en az km'lik sırayı** durak durak çıkaran,
 kurulum gerektirmeyen web uygulaması. Sadece **İzmir ili** içinde çalışır; il dışındaki her sonuç reddedilir.
 
-## Çalıştırma
+## Adres
+
+**https://kuryekariyer.github.io/rota/** (GitHub Pages, depo: github.com/kuryekariyer/rota)
+
+Güncellemeyi yayınlamak için değişiklikleri `main` dalına gönder; Pages 1–2 dakikada yeniler.
+
+Yerelde denemek için:
 
 ```bash
 python -m http.server 5173
 ```
-
-Tarayıcıda `http://localhost:5173`. (Telefonda konum için sitenin https ile yayınlanması gerekir.)
 
 ## Adres girişi
 
